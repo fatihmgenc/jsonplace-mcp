@@ -27,9 +27,27 @@ Use the hosted remote MCP server:
 https://jsonplace.com/mcp
 ```
 
+### Install in Codex
+
+If you want a one-time paste-and-forget setup, add JsonPlace directly to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.jsonplace]
+url = "https://jsonplace.com/mcp"
+http_headers = { Authorization = "Bearer jpak_your_real_key_here" }
+```
+
+If you prefer an environment variable in Codex instead, use:
+
+```toml
+[mcp_servers.jsonplace]
+url = "https://jsonplace.com/mcp"
+bearer_token_env_var = "JSONPLACE_API_KEY"
+```
+
 ### Install in Cursor
 
-Add JsonPlace as a remote MCP server in your global or project config and send your JsonPlace API key as a header.
+Paste the key directly, or replace it with `${env:JSONPLACE_API_KEY}` if you prefer env vars.
 
 ```json
 {
@@ -37,7 +55,7 @@ Add JsonPlace as a remote MCP server in your global or project config and send y
     "jsonplace": {
       "url": "https://jsonplace.com/mcp",
       "headers": {
-        "Authorization": "Bearer ${env:JSONPLACE_API_KEY}"
+        "Authorization": "Bearer jpak_your_real_key_here"
       }
     }
   }
@@ -51,15 +69,15 @@ Suggested locations:
 
 ### Install in Claude Code
 
-Export `JSONPLACE_API_KEY` in your shell, then add the hosted server over HTTP transport:
+Paste the key directly into the command, or swap it for `$JSONPLACE_API_KEY` if you prefer env vars:
 
 ```bash
-claude mcp add --transport http --scope user --header "Authorization: Bearer $JSONPLACE_API_KEY" jsonplace https://jsonplace.com/mcp
+claude mcp add --transport http --scope user --header "Authorization: Bearer jpak_your_real_key_here" jsonplace https://jsonplace.com/mcp
 ```
 
 ### Install in Opencode
 
-Add JsonPlace as a remote MCP server in your Opencode config:
+Add JsonPlace as a remote MCP server in your Opencode config. Paste the key directly, or replace it with `${JSONPLACE_API_KEY}` if you prefer env vars:
 
 ```json
 {
@@ -68,7 +86,7 @@ Add JsonPlace as a remote MCP server in your Opencode config:
       "type": "remote",
       "url": "https://jsonplace.com/mcp",
       "headers": {
-        "Authorization": "Bearer ${JSONPLACE_API_KEY}"
+        "Authorization": "Bearer jpak_your_real_key_here"
       },
       "enabled": true
     }
@@ -84,8 +102,8 @@ Simple flow:
 
 1. Sign in on `jsonplace.com` and open the `MCP` tab.
 2. Copy or regenerate your account API key.
-3. Save it locally as `JSONPLACE_API_KEY`.
-4. Configure your MCP client to send `Authorization: Bearer <JSONPLACE_API_KEY>` to `https://jsonplace.com/mcp`.
+3. Either paste it directly into your client config or store it as `JSONPLACE_API_KEY`.
+4. Configure your MCP client to send `Authorization: Bearer <your JsonPlace API key>` to `https://jsonplace.com/mcp`.
 
 You do not need to run a local JsonPlace MCP process when using the hosted server.
 
