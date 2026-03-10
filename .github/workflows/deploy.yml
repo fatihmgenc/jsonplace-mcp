@@ -1,0 +1,32 @@
+name: Deploy MCP
+
+on:
+  push:
+    branches: ["master"]
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build MCP image
+        run: |
+          docker build -f DOCKERFILE -t jsonplace-mcp:latest .
+
+      - name: Restart MCP container
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
+          JSONPLACE_SITE_URL: ${{ secrets.JSONPLACE_SITE_URL }}
+        run: |
+          docker rm -f jsonplace-mcp || true
+          docker run -d \
+            --name jsonplace-mcp \
+            --restart unless-stopped \
+            -p 3002:3002 \
+            -e MONGODB_URI="${MONGODB_URI}" \
+            -e MONGODB_DB_NAME="${MONGODB_DB_NAME:-JsonPlace}" \
+            -e JSONPLACE_SITE_URL="${JSONPLACE_SITE_URL}" \
+            jsonplace-mcp:latest
