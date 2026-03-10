@@ -7,7 +7,7 @@ import { normalizeFieldDefinitions } from "../lib/fakerCompat.js";
 import { buildFieldsFromJsonObject } from "../lib/inference.js";
 import { buildQuickstartPayload, buildUsageGuideMarkdown } from "../lib/mcpServer.js";
 import { MOCK_SOURCE_TYPES, validateMockEndpointInput } from "../lib/mockEndpoints.js";
-import { getPublicMockEndpoint } from "../lib/mockEndpointStore.js";
+import { createMockEndpointForUser, getPublicMockEndpoint } from "../lib/mockEndpointStore.js";
 import { getSiteUrl } from "../lib/site.js";
 
 function compareValues(left, right) {
@@ -152,6 +152,31 @@ test("resolves public endpoints by canonical public namespace and backfills miss
   assert.equal(endpoint.ownerPublicNamespace, namespace);
   assert.deepEqual(endpoint.payload, { status: "ok" });
   assert.equal(db.state.users[0].publicNamespace, namespace);
+});
+
+test("createMockEndpointForUser returns owner namespace and public URL on create", async () => {
+  const userId = "65f0c0ffee00000000000001";
+  const publicNamespace = buildPublicNamespaceFromUserId(userId);
+  const db = createFakeDb({});
+
+  const endpoint = await createMockEndpointForUser(
+    db,
+    {
+      id: userId,
+      username: "fatih@example.com",
+      publicNamespace
+    },
+    {
+      title: "Health Check",
+      endpointPath: "status/health",
+      sourceType: MOCK_SOURCE_TYPES.staticJson,
+      responseJson: { status: "ok" }
+    },
+    "https://jsonplace.com"
+  );
+
+  assert.equal(endpoint.ownerPublicNamespace, publicNamespace);
+  assert.equal(endpoint.publicUrl, `https://jsonplace.com/mock/${publicNamespace}/status/health`);
 });
 
 test("creates and rotates standalone MCP API keys with hash-based lookup", async () => {
