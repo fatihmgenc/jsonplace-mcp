@@ -178,41 +178,6 @@ JsonPlace MCP currently exposes these tools:
 
 This repository contains the standalone JsonPlace MCP service. It exposes the MCP server, OAuth flow, and related metadata endpoints as a separate Node service while continuing to use the same MongoDB-backed accounts, templates, mock endpoints, sessions, and OAuth collections as the website.
 
-Required environment variables:
-
-- `MONGODB_URI`
-
-Optional environment variables:
-
-- `MONGODB_DB_NAME`
-  Defaults to `JsonPlace`
-- `JSONPLACE_SITE_URL`
-  Canonical public URL used for OAuth metadata, redirects, and generated public URLs
-- `PORT`
-  Defaults to `3002`
-
-Run locally:
-
-```bash
-npm install
-MONGODB_URI='your-mongodb-uri' JSONPLACE_SITE_URL='https://jsonplace.com' npm run dev
-```
-
-## Reverse Proxy Notes
-
-If you serve the website and MCP from the same domain, route these paths to the MCP service:
-
-- `/mcp`
-- `/.well-known/oauth-authorization-server`
-- `/.well-known/oauth-protected-resource/mcp`
-- `/authorize`
-- `/token`
-- `/register`
-- `/revoke`
-- `/oauth/authorize/continue/:requestId`
-
-All other traffic should continue to resolve to the main JsonPlace web app.
-
 ## License
 
 MIT. See [LICENSE](LICENSE).
