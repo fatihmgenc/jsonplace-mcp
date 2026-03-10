@@ -29,13 +29,16 @@ https://jsonplace.com/mcp
 
 ### Install in Cursor
 
-Add JsonPlace as a remote MCP server in your global or project config.
+Add JsonPlace as a remote MCP server in your global or project config and send your JsonPlace API key as a header.
 
 ```json
 {
   "mcpServers": {
     "jsonplace": {
-      "url": "https://jsonplace.com/mcp"
+      "url": "https://jsonplace.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${env:JSONPLACE_API_KEY}"
+      }
     }
   }
 }
@@ -48,10 +51,10 @@ Suggested locations:
 
 ### Install in Claude Code
 
-Add the hosted server over HTTP transport:
+Export `JSONPLACE_API_KEY` in your shell, then add the hosted server over HTTP transport:
 
 ```bash
-claude mcp add --transport http --scope user jsonplace https://jsonplace.com/mcp
+claude mcp add --transport http --scope user --header "Authorization: Bearer $JSONPLACE_API_KEY" jsonplace https://jsonplace.com/mcp
 ```
 
 ### Install in Opencode
@@ -64,22 +67,25 @@ Add JsonPlace as a remote MCP server in your Opencode config:
     "jsonplace": {
       "type": "remote",
       "url": "https://jsonplace.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${JSONPLACE_API_KEY}"
+      },
       "enabled": true
     }
   }
 }
 ```
 
-## OAuth Authentication
+## API Key Authentication
 
-JsonPlace uses OAuth for remote MCP connections.
+JsonPlace uses bearer API keys for remote MCP connections.
 
 Simple flow:
 
-1. Add `https://jsonplace.com/mcp` to your MCP client.
-2. Trigger the server once from the client.
-3. A browser window opens for JsonPlace sign-in and approval.
-4. After approval, the client can access your JsonPlace templates and endpoints.
+1. Sign in on `jsonplace.com` and open the `MCP` tab.
+2. Copy or regenerate your account API key.
+3. Save it locally as `JSONPLACE_API_KEY`.
+4. Configure your MCP client to send `Authorization: Bearer <JSONPLACE_API_KEY>` to `https://jsonplace.com/mcp`.
 
 You do not need to run a local JsonPlace MCP process when using the hosted server.
 
@@ -176,7 +182,7 @@ JsonPlace MCP currently exposes these tools:
 
 ## Self-Hosting and Development
 
-This repository contains the standalone JsonPlace MCP service. It exposes the MCP server, OAuth flow, and related metadata endpoints as a separate Node service while continuing to use the same MongoDB-backed accounts, templates, mock endpoints, sessions, and OAuth collections as the website.
+This repository contains the standalone JsonPlace MCP service. It exposes the MCP server as a separate Node service while continuing to use the same MongoDB-backed accounts, templates, mock endpoints, sessions, and API key collection as the website.
 
 ## License
 

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { ObjectId } from "mongodb";
 import { buildPublicNamespaceFromUserId } from "../lib/auth.js";
+import { createOrRotateApiKeyForUser, getApiKeyMatch } from "../lib/apiKeys.js";
 import { normalizeFieldDefinitions } from "../lib/fakerCompat.js";
 import { buildFieldsFromJsonObject } from "../lib/inference.js";
 import { buildQuickstartPayload, buildUsageGuideMarkdown } from "../lib/mcpServer.js";
@@ -37,10 +38,11 @@ function matchesQuery(document, query) {
   return Object.entries(query || {}).every(([key, value]) => compareValues(document[key], value));
 }
 
-function createFakeDb({ users = [], mockEndpoints = [] }) {
+function createFakeDb({ users = [], mockEndpoints = [], apiKeys = [] }) {
   const state = {
     users: users.map((entry) => ({ ...entry })),
-    mock_endpoints: mockEndpoints.map((entry) => ({ ...entry }))
+    mock_endpoints: mockEndpoints.map((entry) => ({ ...entry })),
+    api_keys: apiKeys.map((entry) => ({ ...entry }))
   };
 
   return {
@@ -63,6 +65,11 @@ function createFakeDb({ users = [], mockEndpoints = [] }) {
 
           Object.assign(row, update?.$set || {});
           return { matchedCount: 1, modifiedCount: 1 };
+        },
+        async insertOne(document) {
+          const insertedId = document._id || new ObjectId();
+          rows.push({ _id: insertedId, ...document });
+          return { insertedId };
         }
       };
     }
@@ -145,6 +152,26 @@ test("resolves public endpoints by canonical public namespace and backfills miss
   assert.equal(endpoint.ownerPublicNamespace, namespace);
   assert.deepEqual(endpoint.payload, { status: "ok" });
   assert.equal(db.state.users[0].publicNamespace, namespace);
+});
+
+test("creates and rotates standalone MCP API keys with hash-based lookup", async () => {
+  const userId = "65f0c0ffee00000000000001";
+  const db = createFakeDb({});
+
+  const firstKey = await createOrRotateApiKeyForUser(db, userId);
+  assert.match(firstKey.apiKey, /^jpak_[0-9a-f]{64}$/);
+  assert.equal(firstKey.rotatedAt, null);
+
+  const firstMatch = await getApiKeyMatch(db, firstKey.apiKey);
+  assert.equal(firstMatch.userId, userId);
+  assert.ok(firstMatch.lastUsedAt instanceof Date);
+
+  const rotatedKey = await createOrRotateApiKeyForUser(db, userId);
+  assert.notEqual(rotatedKey.apiKey, firstKey.apiKey);
+  assert.ok(rotatedKey.rotatedAt instanceof Date);
+
+  const oldMatch = await getApiKeyMatch(db, firstKey.apiKey);
+  assert.equal(oldMatch, null);
 });
 
 test("builds quickstart and usage guide content for the standalone MCP service", () => {
