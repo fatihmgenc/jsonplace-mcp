@@ -1,21 +1,188 @@
-# JsonPlace MCP
+# JsonPlace MCP - Fake JSON and Mock APIs Inside Your MCP Client
 
-JsonPlace MCP is the standalone hosted MCP service for JsonPlace.
+JsonPlace MCP lets your agent generate JSON payloads, manage saved templates, and create or update mock API endpoints directly from your MCP client.
 
-It exposes the JsonPlace MCP server, OAuth flow, and related metadata endpoints as a separate Node/Express service while continuing to use the same MongoDB-backed JsonPlace accounts, templates, mock endpoints, sessions, and OAuth collections as the website.
+## Without JsonPlace MCP
 
-## What This Repo Contains
+You end up describing fake payloads manually in prompts.
 
-- standalone MCP HTTP service at `/mcp`
-- OAuth provider and authorization-continue pages
-- JsonPlace MCP tools and resources
-- shared JsonPlace domain logic required by the MCP service
+- Code and API agents cannot see your saved JsonPlace templates or endpoints.
+- You keep switching between your editor and JsonPlace to copy JSON or public URLs.
+- Mock API setup becomes repetitive every time you need new test data.
 
-## Required Environment Variables
+## With JsonPlace MCP
+
+Your agent can work with JsonPlace directly through one remote MCP connection.
+
+- Create and update template-backed endpoints without leaving the client.
+- Create static JSON endpoints for health checks, config payloads, or fixtures.
+- List saved templates and endpoints from the same JsonPlace account you use on the web.
+- Generate payloads or infer field definitions from sample JSON on demand.
+
+## Installation
+
+Use the hosted remote MCP server:
+
+```text
+https://jsonplace.com/mcp
+```
+
+### Install in Cursor
+
+Add JsonPlace as a remote MCP server in your global or project config.
+
+```json
+{
+  "mcpServers": {
+    "jsonplace": {
+      "url": "https://jsonplace.com/mcp"
+    }
+  }
+}
+```
+
+Suggested locations:
+
+- `~/.cursor/mcp.json`
+- `.cursor/mcp.json`
+
+### Install in Claude Code
+
+Add the hosted server over HTTP transport:
+
+```bash
+claude mcp add --transport http --scope user jsonplace https://jsonplace.com/mcp
+```
+
+### Install in Opencode
+
+Add JsonPlace as a remote MCP server in your Opencode config:
+
+```json
+{
+  "mcp": {
+    "jsonplace": {
+      "type": "remote",
+      "url": "https://jsonplace.com/mcp",
+      "enabled": true
+    }
+  }
+}
+```
+
+## OAuth Authentication
+
+JsonPlace uses OAuth for remote MCP connections.
+
+Simple flow:
+
+1. Add `https://jsonplace.com/mcp` to your MCP client.
+2. Trigger the server once from the client.
+3. A browser window opens for JsonPlace sign-in and approval.
+4. After approval, the client can access your JsonPlace templates and endpoints.
+
+You do not need to run a local JsonPlace MCP process when using the hosted server.
+
+## Important Tips
+
+### Add a Rule
+
+To avoid repeating yourself, add a client rule so your assistant reaches for JsonPlace MCP when you ask for fake JSON or mock APIs.
+
+Example rule:
+
+```text
+Always use JsonPlace MCP when I ask for fake JSON payloads, JSON field generation, template-backed mock APIs, static mock responses, or saved mock endpoint management.
+```
+
+### Ask for Outcomes, Not Tool Names
+
+You usually do not need to mention tool names. Just ask for the result you want.
+
+Examples:
+
+- "Create a static endpoint at `status/health` that returns `{\"status\":\"ok\"}`."
+- "List my saved JsonPlace templates and pick the best one for a company profile endpoint."
+- "Generate a user payload with id, name, city, email, and phone."
+- "Show me the current public response for my `status/health` endpoint."
+
+## Example Prompts
+
+```text
+List my saved JsonPlace templates and mock endpoints, then suggest which one fits a health-check API.
+```
+
+```text
+Create a static JsonPlace endpoint at status/health that returns {"status":"ok"}.
+```
+
+```text
+Generate a company profile payload with name, city, phone, and email, then save it as a template-backed JsonPlace endpoint.
+```
+
+```text
+Show me the current response for my public JsonPlace endpoint at status/health.
+```
+
+## What JsonPlace MCP Can Do
+
+### Discover and Generate Data
+
+- List canonical JsonPlace field options
+- Search the field catalog by keywords
+- Generate JSON payloads from field definitions
+- Infer field definitions from a sample JSON object
+
+### Manage Templates
+
+- List saved templates
+- Save new templates
+- Delete templates
+
+### Manage Mock Endpoints
+
+- List saved mock endpoints
+- Create template-backed mock endpoints
+- Create static JSON mock endpoints
+- Update existing endpoints
+- Delete endpoints
+
+### Resolve Public Payloads
+
+- Fetch the current payload behind a public JsonPlace endpoint
+
+## Available Tools
+
+JsonPlace MCP currently exposes these tools:
+
+- `jsonplace_whoami`
+- `jsonplace_list_field_options`
+- `jsonplace_search_field_options`
+- `jsonplace_quickstart`
+- `jsonplace_generate_json`
+- `jsonplace_infer_fields_from_json`
+- `jsonplace_list_templates`
+- `jsonplace_save_template`
+- `jsonplace_delete_template`
+- `jsonplace_list_mock_endpoints`
+- `jsonplace_create_template_endpoint`
+- `jsonplace_create_static_endpoint`
+- `jsonplace_update_template_endpoint`
+- `jsonplace_update_static_endpoint`
+- `jsonplace_create_mock_endpoint`
+- `jsonplace_update_mock_endpoint`
+- `jsonplace_delete_mock_endpoint`
+- `jsonplace_get_public_mock_response`
+
+## Self-Hosting and Development
+
+This repository contains the standalone JsonPlace MCP service. It exposes the MCP server, OAuth flow, and related metadata endpoints as a separate Node service while continuing to use the same MongoDB-backed accounts, templates, mock endpoints, sessions, and OAuth collections as the website.
+
+Required environment variables:
 
 - `MONGODB_URI`
 
-## Optional Environment Variables
+Optional environment variables:
 
 - `MONGODB_DB_NAME`
   Defaults to `JsonPlace`
@@ -24,16 +191,16 @@ It exposes the JsonPlace MCP server, OAuth flow, and related metadata endpoints 
 - `PORT`
   Defaults to `3002`
 
-## Development
+Run locally:
 
 ```bash
 npm install
 MONGODB_URI='your-mongodb-uri' JSONPLACE_SITE_URL='https://jsonplace.com' npm run dev
 ```
 
-## Production Notes
+## Reverse Proxy Notes
 
-This service is intended to sit behind the main JsonPlace domain through reverse proxy or gateway routing. Route these paths to the MCP service:
+If you serve the website and MCP from the same domain, route these paths to the MCP service:
 
 - `/mcp`
 - `/.well-known/oauth-authorization-server`
@@ -44,4 +211,8 @@ This service is intended to sit behind the main JsonPlace domain through reverse
 - `/revoke`
 - `/oauth/authorize/continue/:requestId`
 
-All other website traffic should continue to resolve to the main JsonPlace web app.
+All other traffic should continue to resolve to the main JsonPlace web app.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
