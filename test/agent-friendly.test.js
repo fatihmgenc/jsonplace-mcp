@@ -5,6 +5,7 @@ import { buildPublicNamespaceFromUserId } from "../lib/auth.js";
 import { createOrRotateApiKeyForUser, getApiKeyMatch } from "../lib/apiKeys.js";
 import { normalizeFieldDefinitions } from "../lib/fakerCompat.js";
 import { buildFieldsFromJsonObject } from "../lib/inference.js";
+import { resolveMcpRequestContext } from "../lib/mcpAuth.js";
 import { buildQuickstartPayload, buildUsageGuideMarkdown } from "../lib/mcpServer.js";
 import { MOCK_SOURCE_TYPES, validateMockEndpointInput } from "../lib/mockEndpoints.js";
 import { createMockEndpointForUser, getPublicMockEndpoint } from "../lib/mockEndpointStore.js";
@@ -179,6 +180,30 @@ test("createMockEndpointForUser returns owner namespace and public URL on create
   assert.equal(endpoint.publicUrl, `https://jsonplace.com/mock/${publicNamespace}/status/health`);
 });
 
+test("anonymous mock endpoint creation returns a live public URL with an anonymous namespace", async () => {
+  const db = createFakeDb({});
+
+  const endpoint = await createMockEndpointForUser(
+    db,
+    null,
+    {
+      title: "Health Check",
+      endpointPath: "status/health",
+      sourceType: MOCK_SOURCE_TYPES.staticJson,
+      responseJson: { status: "ok" }
+    },
+    "https://jsonplace.com"
+  );
+
+  assert.equal(endpoint.ownerType, "anonymous");
+  assert.match(endpoint.ownerPublicNamespace, /^anon-[0-9a-f]{24}$/);
+  assert.equal(endpoint.publicUrl, `https://jsonplace.com/mock/${endpoint.ownerPublicNamespace}/status/health`);
+
+  const resolved = await getPublicMockEndpoint(db, endpoint.ownerPublicNamespace, "status/health");
+  assert.equal(resolved.ownerPublicNamespace, endpoint.ownerPublicNamespace);
+  assert.deepEqual(resolved.payload, { status: "ok" });
+});
+
 test("creates and rotates standalone MCP API keys with hash-based lookup", async () => {
   const userId = "65f0c0ffee00000000000001";
   const db = createFakeDb({});
@@ -199,6 +224,50 @@ test("creates and rotates standalone MCP API keys with hash-based lookup", async
   assert.equal(oldMatch, null);
 });
 
+test("resolves MCP requests as anonymous without auth and authenticated with a valid API key", async () => {
+  const userId = "65f0c0ffee00000000000001";
+  const db = createFakeDb({
+    users: [
+      {
+        _id: new ObjectId(userId),
+        username: "fatih@example.com",
+        usernameLower: "fatih@example.com"
+      }
+    ]
+  });
+
+  const anonymousContext = await resolveMcpRequestContext({ headers: {} }, db);
+  assert.equal(anonymousContext.ok, true);
+  assert.equal(anonymousContext.authMode, "anonymous");
+  assert.equal(anonymousContext.user, null);
+
+  const apiKey = await createOrRotateApiKeyForUser(db, userId);
+  const authenticatedContext = await resolveMcpRequestContext(
+    {
+      headers: {
+        authorization: `Bearer ${apiKey.apiKey}`
+      }
+    },
+    db
+  );
+
+  assert.equal(authenticatedContext.ok, true);
+  assert.equal(authenticatedContext.authMode, "apiKey");
+  assert.equal(authenticatedContext.user.username, "fatih@example.com");
+
+  const invalidContext = await resolveMcpRequestContext(
+    {
+      headers: {
+        authorization: "Bearer jpak_invalid"
+      }
+    },
+    db
+  );
+
+  assert.equal(invalidContext.ok, false);
+  assert.equal(invalidContext.status, 401);
+});
+
 test("builds quickstart and usage guide content for the standalone MCP service", () => {
   const quickstart = buildQuickstartPayload("static");
   const guide = buildUsageGuideMarkdown("https://jsonplace.com");
@@ -206,6 +275,7 @@ test("builds quickstart and usage guide content for the standalone MCP service",
   assert.equal(quickstart.topic, "static-endpoint");
   assert.equal(quickstart.recipes[0].tool, "jsonplace_create_static_endpoint");
   assert.match(guide, /jsonplace_create_template_endpoint/);
+  assert.match(guide, /Connect without auth/);
   assert.match(guide, /Base site URL: https:\/\/jsonplace\.com/);
 });
 

@@ -1,6 +1,8 @@
 # JsonPlace MCP - Fake JSON and Mock APIs Inside Your MCP Client
 
-JsonPlace MCP lets your agent generate JSON payloads, manage saved templates, and create or update mock API endpoints directly from your MCP client.
+JsonPlace MCP lets your agent generate JSON payloads, create mock API endpoints, and optionally manage saved templates and saved endpoints directly from your MCP client.
+
+Public setup docs also live on the website at `https://jsonplace.com/docs/mcp`, with client-specific pages for Codex, Cursor, Claude Code, Opencode, AGENTS.md instructions, and concrete recipe pages.
 
 ## Without JsonPlace MCP
 
@@ -14,9 +16,9 @@ You end up describing fake payloads manually in prompts.
 
 Your agent can work with JsonPlace directly through one remote MCP connection.
 
-- Create and update template-backed endpoints without leaving the client.
+- Generate JSON and create public mock endpoints without any login.
 - Create static JSON endpoints for health checks, config payloads, or fixtures.
-- List saved templates and endpoints from the same JsonPlace account you use on the web.
+- Add an API key later to list saved templates and manage saved endpoints from the same JsonPlace account you use on the web.
 - Generate payloads or infer field definitions from sample JSON on demand.
 
 ## Installation
@@ -29,7 +31,14 @@ https://jsonplace.com/mcp
 
 ### Install in Codex
 
-If you want a one-time paste-and-forget setup, add JsonPlace directly to `~/.codex/config.toml`:
+Start with public mode:
+
+```toml
+[mcp_servers.jsonplace]
+url = "https://jsonplace.com/mcp"
+```
+
+Optional account upgrade:
 
 ```toml
 [mcp_servers.jsonplace]
@@ -37,17 +46,21 @@ url = "https://jsonplace.com/mcp"
 http_headers = { Authorization = "Bearer jpak_your_real_key_here" }
 ```
 
-If you prefer an environment variable in Codex instead, use:
-
-```toml
-[mcp_servers.jsonplace]
-url = "https://jsonplace.com/mcp"
-bearer_token_env_var = "JSONPLACE_API_KEY"
-```
-
 ### Install in Cursor
 
-Paste the key directly, or replace it with `${env:JSONPLACE_API_KEY}` if you prefer env vars.
+Start with public mode:
+
+```json
+{
+  "mcpServers": {
+    "jsonplace": {
+      "url": "https://jsonplace.com/mcp"
+    }
+  }
+}
+```
+
+Optional account upgrade:
 
 ```json
 {
@@ -69,7 +82,13 @@ Suggested locations:
 
 ### Install in Claude Code
 
-Paste the key directly into the command, or swap it for `$JSONPLACE_API_KEY` if you prefer env vars:
+Start with public mode:
+
+```bash
+claude mcp add --transport http --scope user jsonplace https://jsonplace.com/mcp
+```
+
+Optional account upgrade:
 
 ```bash
 claude mcp add --transport http --scope user --header "Authorization: Bearer jpak_your_real_key_here" jsonplace https://jsonplace.com/mcp
@@ -77,7 +96,21 @@ claude mcp add --transport http --scope user --header "Authorization: Bearer jpa
 
 ### Install in Opencode
 
-Add JsonPlace as a remote MCP server in your Opencode config. Paste the key directly, or replace it with `${JSONPLACE_API_KEY}` if you prefer env vars:
+Start with public mode:
+
+```json
+{
+  "mcp": {
+    "jsonplace": {
+      "type": "remote",
+      "url": "https://jsonplace.com/mcp",
+      "enabled": true
+    }
+  }
+}
+```
+
+Optional account upgrade:
 
 ```json
 {
@@ -96,14 +129,14 @@ Add JsonPlace as a remote MCP server in your Opencode config. Paste the key dire
 
 ## API Key Authentication
 
-JsonPlace uses bearer API keys for remote MCP connections.
+JsonPlace works without any API key for public tools. Bearer API keys are only needed for account-backed MCP features.
 
 Simple flow:
 
-1. Sign in on `jsonplace.com` and open the `MCP` tab.
-2. Copy or regenerate your account API key.
-3. Either paste it directly into your client config or store it as `JSONPLACE_API_KEY`.
-4. Configure your MCP client to send `Authorization: Bearer <your JsonPlace API key>` to `https://jsonplace.com/mcp`.
+1. Connect your MCP client to `https://jsonplace.com/mcp`.
+2. Use public mode immediately for fake JSON generation and one-off public mock endpoints.
+3. Sign in on `jsonplace.com/docs/mcp` only if you want saved templates or endpoint management.
+4. Copy your account API key and add `Authorization: Bearer <your JsonPlace API key>` to your client config when you need those account features.
 
 You do not need to run a local JsonPlace MCP process when using the hosted server.
 
@@ -159,17 +192,17 @@ Show me the current response for my public JsonPlace endpoint at status/health.
 
 ### Manage Templates
 
-- List saved templates
-- Save new templates
-- Delete templates
+- List saved templates with an API key
+- Save new templates with an API key
+- Delete templates with an API key
 
 ### Manage Mock Endpoints
 
-- List saved mock endpoints
 - Create template-backed mock endpoints
 - Create static JSON mock endpoints
-- Update existing endpoints
-- Delete endpoints
+- List saved mock endpoints with an API key
+- Update existing endpoints with an API key
+- Delete endpoints with an API key
 
 ### Resolve Public Payloads
 
